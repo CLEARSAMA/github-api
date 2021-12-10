@@ -2056,6 +2056,21 @@ public class GHRepository extends GHObject {
         return v.isEmpty() ? null : v.get(0);
     }
 
+    // CS427 Issue link: https://github.com/CLEARSAMA/github-api/GHRepository.getLastCommitStatus() reads all statuses to find last status/#748
+    /**Author:Ziqi Li
+     * Gets the last status of this commit, which is what gets shown in the UI.
+     *
+     * @param sha1
+     *            the sha 1
+     * @return the last commit status
+     * @throws IOException
+     *             the io exception
+     */
+    public GHCommitStatus getLastCommitStatusMy(String sha1) throws IOException {
+        List<GHCommitStatus> v = listCommitStatuses(sha1).toListMy();
+        return v.isEmpty() ? null : v.get(0);
+    }
+
     /**
      * Gets check runs for given ref.
      *
@@ -3220,6 +3235,8 @@ public class GHRepository extends GHObject {
      *            the eventType
      * @param clientPayload
      *            a custom payload , can be nullable
+     * @param <T>
+     *            type of client payload
      * @throws IOException
      *             the io exception
      */
