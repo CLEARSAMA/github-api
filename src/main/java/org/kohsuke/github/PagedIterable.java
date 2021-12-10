@@ -94,6 +94,66 @@ public abstract class PagedIterable<T> implements Iterable<T> {
         }
     }
 
+    // CS427 Issue link: https://github.com/CLEARSAMA/github-api/GHRepository.getLastCommitStatus() reads all statuses to find last status/#748
+    /** Author: Ziqi Li
+     * Eagerly walk {@link PagedIterator} and return the first element in an array.
+     *
+     * @param iterator
+     *            the {@link PagedIterator} to read
+     * @return the first element from the {@link PagedIterator}
+     * @throws IOException
+     *             if an I/O exception occurs.
+     */
+    protected T[] getFirstPage(final PagedIterator<T> iterator) throws IOException {
+        try {
+
+            ArrayList<T[]> pages = new ArrayList<>();
+            int totalSize = 0;
+            T[] item;
+
+            item = iterator.nextPageArray();
+            totalSize += Array.getLength(item);
+            pages.add(item);
+            Class<T[]> type = (Class<T[]>) item.getClass();
+
+            return concatenatePages(type, pages, totalSize);
+        } catch (GHException e) {
+            // if there was an exception inside the iterator it is wrapped as a GHException
+            // if the wrapped exception is an IOException, throw that
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    // CS427 Issue link: https://github.com/CLEARSAMA/github-api/GHRepository.getLastCommitStatus() reads all statuses to find last status/#748
+    /**Author:Ziqi Li
+     * Eagerly walk {@link Iterable} and return the result in an array.
+     *
+     * @return the list
+     * @throws IOException
+     *             if an I/O exception occurs.
+     */
+    @Nonnull
+    public T[] toArrayMy() throws IOException {
+        return getFirstPage(iterator());
+    }
+
+    // CS427 Issue link: https://github.com/CLEARSAMA/github-api/GHRepository.getLastCommitStatus() reads all statuses to find last status/#748
+    /**Author: Ziqi Li
+     * Eagerly walk {@link Iterable} and return the result in a list.
+     *
+     * @return the list
+     * @throws IOException
+     *             if an I/O Exception occurs
+     */
+    @Nonnull
+    public List<T> toListMy() throws IOException {
+        return Collections.unmodifiableList(Arrays.asList(this.toArrayMy()));
+    }
+
     /**
      * Eagerly walk {@link Iterable} and return the result in an array.
      *
