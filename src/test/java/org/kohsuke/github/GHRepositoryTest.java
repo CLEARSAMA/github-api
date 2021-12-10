@@ -424,7 +424,7 @@ public class GHRepositoryTest extends AbstractGitHubWireMockTest {
         PagedSearchIterable<GHRepository> list = gitHub.searchRepositories()
                 .user("t0m4uk1991")
                 .visibility(GHRepository.Visibility.PUBLIC)
-                .fork(GHRepositorySearchBuilder.Fork.PARENT_AND_FORKS)
+                .fork(GHFork.PARENT_AND_FORKS)
                 .list();
         List<GHRepository> u = list.toList();
         assertThat(u.size(), is(14));
@@ -437,7 +437,7 @@ public class GHRepositoryTest extends AbstractGitHubWireMockTest {
         PagedSearchIterable<GHRepository> list = gitHub.searchRepositories()
                 .user("t0m4uk1991")
                 .visibility(GHRepository.Visibility.PUBLIC)
-                .fork(GHRepositorySearchBuilder.Fork.FORKS_ONLY)
+                .fork(GHFork.FORKS_ONLY)
                 .list();
         List<GHRepository> u = list.toList();
         assertThat(u.size(), is(2));
@@ -467,6 +467,22 @@ public class GHRepositoryTest extends AbstractGitHubWireMockTest {
     @Test
     public void ghRepositorySearchBuilderForkDefaultResetForksSearchTerms() {
         GHRepositorySearchBuilder ghRepositorySearchBuilder = new GHRepositorySearchBuilder(gitHub);
+
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.fork(GHFork.PARENT_AND_FORKS);
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:true")).count(), is(1L));
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(1L));
+
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.fork(GHFork.FORKS_ONLY);
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:only")).count(), is(1L));
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(2L));
+
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.fork(GHFork.PARENT_ONLY);
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(0L));
+    }
+
+    @Test
+    public void ghRepositorySearchBuilderForkDeprecatedEnum() {
+        GHRepositorySearchBuilder ghRepositorySearchBuilder = new GHRepositorySearchBuilder(gitHub);
         ghRepositorySearchBuilder = ghRepositorySearchBuilder.fork(GHRepositorySearchBuilder.Fork.PARENT_AND_FORKS);
         assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:true")).count(), is(1L));
         assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(1L));
@@ -476,6 +492,21 @@ public class GHRepositoryTest extends AbstractGitHubWireMockTest {
         assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(2L));
 
         ghRepositorySearchBuilder = ghRepositorySearchBuilder.fork(GHRepositorySearchBuilder.Fork.PARENT_ONLY);
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(0L));
+    }
+
+    @Test
+    public void ghRepositorySearchBuilderForkDeprecatedString() {
+        GHRepositorySearchBuilder ghRepositorySearchBuilder = new GHRepositorySearchBuilder(gitHub);
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.forks(GHFork.PARENT_AND_FORKS.toString());
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:true")).count(), is(1L));
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(1L));
+
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.forks(GHFork.FORKS_ONLY.toString());
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:only")).count(), is(1L));
+        assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(2L));
+
+        ghRepositorySearchBuilder = ghRepositorySearchBuilder.forks(null);
         assertThat(ghRepositorySearchBuilder.terms.stream().filter(item -> item.contains("fork:")).count(), is(0L));
     }
 
@@ -868,6 +899,28 @@ public class GHRepositoryTest extends AbstractGitHubWireMockTest {
         assertThat(status.getId(), equalTo(9027542286L));
         assertThat(status.getState(), equalTo(GHCommitState.SUCCESS));
         assertThat(status.getContext(), equalTo("ci/circleci: build"));
+    }
+
+    // CS427 Issue link: https://github.com/CLEARSAMA/github-api/GHRepository.getLastCommitStatus() reads all statuses to find last status/#748
+    @Test
+    public void getLastCommitStatusMy() throws Exception {
+        //test null returned body
+        GHCommitStatus statusnull = getRepository().getLastCommitStatusMy("bfc2d5a5c4550ab3a2fadeb9459b4bd948ff61a2");
+        assertThat(statusnull, equalTo(null));
+
+        //test long returned body
+        GHCommitStatus statuslong = getRepository().getLastCommitStatusMy("blong");
+
+        assertThat(statuslong.getId(), equalTo(1L));
+        assertThat(statuslong.getState(), equalTo(GHCommitState.SUCCESS));
+        assertThat(statuslong.getContext(), equalTo("ci/circleci: build"));
+
+        //test short returned body
+        GHCommitStatus statusshort = getRepository().getLastCommitStatusMy("bshort");
+
+        assertThat(statusshort.getId(), equalTo(1L));
+        assertThat(statusshort.getState(), equalTo(GHCommitState.SUCCESS));
+        assertThat(statusshort.getContext(), equalTo("ci/circleci: build"));
     }
 
     @Test
